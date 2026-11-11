@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
 type Mode = "login" | "register";
 
 const YELLOW = "#FFE22E";
-const CUT = 52;
+const CUT = 55;
 const NOTCH = 45;
 const TRAVEL_MS = 420;
 const HOLD_MS = 400;
@@ -27,63 +27,96 @@ const buttonClass =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 " +
   "disabled:cursor-not-allowed disabled:opacity-60";
 
-const ribbons = [
-  { from: "M-100 620 C 250 520, 480 760, 820 560 S 1250 380, 1560 470", to: "M-100 560 C 260 640, 500 600, 840 660 S 1240 460, 1560 400", width: 18, stroke: "url(#gold)", duration: 16 },
-  { from: "M-100 440 C 300 380, 560 520, 900 420 S 1280 360, 1560 430", to: "M-100 480 C 320 440, 540 420, 920 480 S 1280 400, 1560 380", width: 10, stroke: "url(#gold)", duration: 18 },
-  { from: "M-100 700 C 300 600, 520 820, 880 640 S 1260 480, 1560 560", to: "M-100 650 C 320 720, 540 700, 900 740 S 1250 560, 1560 500", width: 3, stroke: "url(#goldThin)", duration: 19 },
-  { from: "M-100 300 C 200 180, 520 360, 860 220 S 1280 120, 1560 200", to: "M-100 360 C 220 260, 500 280, 880 300 S 1260 200, 1560 130", width: 28, stroke: "url(#bronze)", duration: 21 },
-  { from: "M-100 120 C 260 60, 560 220, 900 100 S 1300 40, 1560 90", to: "M-100 170 C 280 140, 540 140, 920 160 S 1300 80, 1560 40", width: 4, stroke: "url(#goldThin)", duration: 24 },
-  { from: "M-100 860 C 320 800, 640 940, 960 820 S 1300 700, 1560 780", to: "M-100 820 C 340 880, 620 860, 980 880 S 1300 760, 1560 700", width: 64, stroke: "url(#chrome)", duration: 26 },
-];
+function Background({ animate = true }: { animate?: boolean }) {
+  const apparelIcons = [
+    <path key="shirt" d="M20.38 3.46L16 2 12 4 8 2 3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />,
+    <path key="pants" d="M6 2h12v4l-1.5 16h-3.5L12 11l-1.5 11H7L5.5 6V2z" />,
+    <path key="skirt" d="M8 3h8l2.5 16H5.5L8 3z" />,
+    <path key="cap" d="M3 15a7 7 0 0 1 13.5-3M2 15h14a4 4 0 0 1 4 4v1H2v-5z" />,
+    <path key="tag" d="M12 2H6a2 2 0 0 0-2 2v6l10 10 8-8L12 2zM7.5 7.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />,
+    <path key="hanger" d="M12 2a2 2 0 0 0-2 2c0 .8.5 1.5 1.2 1.8L3.2 13.5A1.5 1.5 0 0 0 4.3 16h15.4a1.5 1.5 0 0 0 1.1-2.5L12.8 5.8C13.5 5.5 14 4.8 14 4a2 2 0 0 0-2-2z" />,
+    <g key="bag"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></g>,
+    <path key="coat" d="M4 4l4-2h8l4 2-1.5 5L17 8v12H7V8L5.5 9 4 4zm8 0a2 2 0 0 0-2 2v14h4V6a2 2 0 0 0-2-2z" />,
+    <path key="dress" d="M9 2h6l1 4-2 3 3.5 11H6.5L10 9 8 6l1-4z" />,
+    <path key="sando" d="M7 2h2v4a3 3 0 0 0 6 0V2h2l1 6H6l1-6zm-1 7h12v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9z" />,
+    <path key="blouse" d="M9 2a3 3 0 0 0 6 0l4 3-2 4-3-1v12H10V8L7 9 5 5l4-3z" />,
+  ];
 
-function Background({ animate }: { animate: boolean }) {
+  const floatingItems = [
+    { iconIdx: 0, x: "4%", delay: 0, duration: 7, scale: 0.9 },
+    { iconIdx: 7, x: "10%", delay: 2.2, duration: 8.5, scale: 1 },
+    { iconIdx: 8, x: "16%", delay: 0.8, duration: 6.8, scale: 0.95 },
+    { iconIdx: 5, x: "22%", delay: 3.1, duration: 9, scale: 0.85 },
+    { iconIdx: 9, x: "28%", delay: 1.4, duration: 7.2, scale: 1 },
+    { iconIdx: 1, x: "34%", delay: 0.3, duration: 8, scale: 1.05 },
+    { iconIdx: 10, x: "40%", delay: 2.7, duration: 6.5, scale: 0.9 },
+    { iconIdx: 6, x: "46%", delay: 1.1, duration: 9.2, scale: 0.85 },
+    { iconIdx: 2, x: "52%", delay: 0.1, duration: 7.6, scale: 0.95 },
+    { iconIdx: 3, x: "58%", delay: 2.4, duration: 8.2, scale: 1 },
+    { iconIdx: 7, x: "64%", delay: 1.6, duration: 7.1, scale: 1.05 },
+    { iconIdx: 8, x: "70%", delay: 0.5, duration: 8.8, scale: 0.9 },
+    { iconIdx: 4, x: "76%", delay: 2.9, duration: 6.9, scale: 0.85 },
+    { iconIdx: 9, x: "82%", delay: 1.2, duration: 7.8, scale: 0.95 },
+    { iconIdx: 10, x: "88%", delay: 0.2, duration: 8.4, scale: 1 },
+    { iconIdx: 0, x: "94%", delay: 2.0, duration: 7.4, scale: 0.9 },
+  ];
+
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden bg-[#050403]">
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <linearGradient id="gold" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor="#3a2410" stopOpacity="0" />
-            <stop offset="0.35" stopColor="#d9962b" />
-            <stop offset="0.6" stopColor="#ffd36b" />
-            <stop offset="1" stopColor="#7a4a14" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="goldThin" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor="#ffd36b" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#ffe9a8" />
-            <stop offset="1" stopColor="#c8832a" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="bronze" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor="#2a1808" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#9a5a1c" />
-            <stop offset="1" stopColor="#3b220c" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="chrome" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor="#1a1a1a" />
-            <stop offset="0.5" stopColor="#5b5b5b" />
-            <stop offset="1" stopColor="#101010" />
-          </linearGradient>
-          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="14" />
-          </filter>
-        </defs>
-        <g filter="url(#soft)" opacity="0.55">
-          <path d={ribbons[0].from} stroke="#d9962b" strokeWidth="38" fill="none" />
-          <path d={ribbons[3].from} stroke="#8a4f17" strokeWidth="46" fill="none" />
-        </g>
-        {ribbons.map((r, i) => (
-          <motion.path
-            key={i}
-            d={r.from}
-            fill="none"
-            stroke={r.stroke}
-            strokeWidth={r.width}
-            strokeLinecap="round"
-            animate={animate ? { d: [r.from, r.to, r.from] } : undefined}
-            transition={{ duration: r.duration, repeat: Infinity, ease: "easeInOut" }}
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden bg-[#0c0a07]">
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full bg-[#FFE22E]/10 blur-[130px]" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] rounded-full bg-[#f59e0b]/10 blur-[110px]" />
+
+      <div className="absolute inset-0 flex items-center justify-center">
+        {[1, 2, 3].map((ring) => (
+          <motion.div
+            key={ring}
+            className="absolute rounded-full border border-[#FFE22E]/25"
+            initial={{ scale: 0.7, opacity: 0.5 }}
+            animate={animate ? { scale: [0.7, 1.8], opacity: [0.5, 0] } : undefined}
+            transition={{ duration: 6, repeat: Infinity, delay: ring * 2, ease: "easeOut" }}
+            style={{ width: `${ring * 240}px`, height: `${ring * 240}px` }}
           />
         ))}
-      </svg>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.7)_100%)]" />
+      </div>
+
+      {floatingItems.map((item, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-[#FFE22E]/30"
+          style={{ left: item.x }}
+          initial={{ y: "105vh", opacity: 0 }}
+          animate={
+            animate
+              ? {
+                  y: ["105vh", "-15vh"],
+                  rotate: [0, 20, -20, 0],
+                  opacity: [0, 0.65, 0.65, 0],
+                }
+              : undefined
+          }
+          transition={{
+            duration: item.duration,
+            repeat: Infinity,
+            delay: item.delay,
+            ease: "linear",
+          }}
+        >
+          <svg
+            width={32 * item.scale}
+            height={32 * item.scale}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {apparelIcons[item.iconIdx]}
+          </svg>
+        </motion.div>
+      ))}
+
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_25%,rgba(12,10,7,0.85)_100%)]" />
     </div>
   );
 }
@@ -233,6 +266,11 @@ export default function AuthCard() {
     e.preventDefault();
     setError(null);
 
+    if (!username.trim() || !password || (mode === "register" && !confirm)) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
     if (mode === "register" && password !== confirm) {
       setError("Passwords don't match.");
       return;
@@ -272,7 +310,7 @@ export default function AuthCard() {
 
   return (
     <main className="relative flex h-screen w-full items-center justify-center overflow-hidden px-4">
-      <Background animate={!reduceMotion} />
+     <Background animate={true} />
       <motion.div
         className="relative w-full max-w-md"
         initial={false}
@@ -322,8 +360,9 @@ export default function AuthCard() {
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div>
+            <div className="relative">
               <label htmlFor="username" className="sr-only">Username</label>
+              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
                 id="username"
                 type="text"
@@ -332,12 +371,13 @@ export default function AuthCard() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className={inputClass}
+                className={`${inputClass} pl-10`}
               />
             </div>
 
             <div className="relative">
               <label htmlFor="password" className="sr-only">Password</label>
+              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -346,7 +386,7 @@ export default function AuthCard() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`${inputClass} pr-12`}
+                className={`${inputClass} pl-10 pr-12`}
               />
               <button
                 type="button"
@@ -359,8 +399,9 @@ export default function AuthCard() {
             </div>
 
             {!isLogin && (
-              <div>
+              <div className="relative">
                 <label htmlFor="confirm" className="sr-only">Confirm password</label>
+                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <input
                   id="confirm"
                   type={showPassword ? "text" : "password"}
@@ -369,8 +410,16 @@ export default function AuthCard() {
                   required
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} pl-10 pr-12`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFE22E]/60"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             )}
 
@@ -397,9 +446,6 @@ export default function AuthCard() {
 
             <button type="submit" disabled={loading} className={buttonClass}>
               {loading ? "Please wait…" : isLogin ? "Login" : "Register"}
-              {!loading && (
-                <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
-              )}
             </button>
           </form>
 

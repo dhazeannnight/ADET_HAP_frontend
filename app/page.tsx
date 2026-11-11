@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { CONFIG } from "@/lib/config";
+import AuthCard from "@/components/auth-card";
 
 export default function Home() {
-  redirect(CONFIG.ROUTES.LOGIN);
+  return <AuthCard />;
 }
