@@ -1,9 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { setTokens } from "@/lib/auth";
 
 type Mode = "login" | "register";
 
@@ -17,15 +30,37 @@ const ZOOM_OUT = 0.97;
 const CHAMFER = `polygon(${CUT}px 0, 100% 0, 100% calc(100% - ${CUT}px), calc(100% - ${CUT}px) 100%, 0 100%, 0 ${CUT}px)`;
 
 const inputClass =
-  "w-full rounded-lg border border-white/20 bg-black/20 px-4 py-3 text-white " +
-  "placeholder:text-zinc-400 outline-none transition-colors " +
-  "focus:border-[#FFE22E]/80 focus-visible:ring-2 focus-visible:ring-[#FFE22E]/30";
+  "h-auto w-full rounded-lg border border-white/20 bg-black/20 px-4 py-3 text-base text-white shadow-none md:text-base dark:bg-black/20 " +
+  "placeholder:text-zinc-400 outline-none transition-colors selection:bg-[Highlight] selection:text-[HighlightText] " +
+  "focus-visible:border-[#FFE22E]/80 focus-visible:ring-2 focus-visible:ring-[#FFE22E]/30 focus-visible:ring-offset-0";
 
 const buttonClass =
-  "group flex w-full items-center justify-center gap-2 rounded-lg bg-[#FFE22E] px-4 py-3 " +
-  "font-semibold text-black transition-colors hover:bg-[#fff06b] " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 " +
-  "disabled:cursor-not-allowed disabled:opacity-60";
+  "group flex h-auto w-full items-center justify-center gap-2 rounded-lg border-0 bg-clip-border bg-[#FFE22E] px-4 py-3 text-base " +
+  "font-semibold text-black shadow-none transition-colors hover:bg-[#fff06b] " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0 " +
+  "disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-60";
+
+const eyeButtonClass =
+  "absolute right-3 top-1/2 size-[26px] -translate-y-1/2 active:translate-y-[calc(-50%+2px)]! rounded border-0 bg-clip-border text-zinc-400 transition-colors " +
+  "hover:bg-transparent hover:text-[#EAB308] dark:hover:bg-transparent " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFE22E]/60 focus-visible:ring-offset-0";
+
+const linkButtonClass =
+  "inline-block h-auto border-0 p-0 align-baseline text-sm font-medium underline-offset-auto transition-opacity " +
+  "hover:no-underline hover:opacity-80 focus-visible:underline focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0";
+
+const checkboxClass =
+  "size-4 rounded-full border border-white/30 bg-transparent shadow-none transition-colors " +
+  "data-[checked]:!bg-[#FFE22E] data-[checked]:!border-[#FFE22E] data-[checked]:!text-black " +
+  "[&_span]:!bg-transparent [&_svg]:size-3 [&_svg]:stroke-[3] [&_svg]:!text-black " +
+  "focus-visible:ring-2 focus-visible:ring-[#FFE22E]/60 focus-visible:ring-offset-0";
+
+
+
+const cardResetClass =
+  "gap-0 overflow-visible rounded-none border-0 bg-transparent p-0 text-inherit shadow-none ring-0";
+
+const eyeIconStyle = { width: 18, height: 18 };
 
 function Background({ animate = true }: { animate?: boolean }) {
   const apparelIcons = [
@@ -35,7 +70,7 @@ function Background({ animate = true }: { animate?: boolean }) {
     <path key="cap" d="M3 15a7 7 0 0 1 13.5-3M2 15h14a4 4 0 0 1 4 4v1H2v-5z" />,
     <path key="tag" d="M12 2H6a2 2 0 0 0-2 2v6l10 10 8-8L12 2zM7.5 7.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />,
     <path key="hanger" d="M12 2a2 2 0 0 0-2 2c0 .8.5 1.5 1.2 1.8L3.2 13.5A1.5 1.5 0 0 0 4.3 16h15.4a1.5 1.5 0 0 0 1.1-2.5L12.8 5.8C13.5 5.5 14 4.8 14 4a2 2 0 0 0-2-2z" />,
-    <g key="bag"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></g>,
+    <g key="bag"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></g>,
     <path key="coat" d="M4 4l4-2h8l4 2-1.5 5L17 8v12H7V8L5.5 9 4 4zm8 0a2 2 0 0 0-2 2v14h4V6a2 2 0 0 0-2-2z" />,
     <path key="dress" d="M9 2h6l1 4-2 3 3.5 11H6.5L10 9 8 6l1-4z" />,
     <path key="sando" d="M7 2h2v4a3 3 0 0 0 6 0V2h2l1 6H6l1-6zm-1 7h12v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9z" />,
@@ -88,10 +123,10 @@ function Background({ animate = true }: { animate?: boolean }) {
           animate={
             animate
               ? {
-                  y: ["105vh", "-15vh"],
-                  rotate: [0, 20, -20, 0],
-                  opacity: [0, 0.65, 0.65, 0],
-                }
+                y: ["105vh", "-15vh"],
+                rotate: [0, 20, -20, 0],
+                opacity: [0, 0.65, 0.65, 0],
+              }
               : undefined
           }
           transition={{
@@ -210,17 +245,22 @@ function Pulse({ gathered }: { gathered: boolean }) {
 }
 
 export default function AuthCard() {
+  const router = useRouter();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [mode, setMode] = useState<Mode>(pathname === "/register" ? "register" : "login");
   const [gathered, setGathered] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [remember, setRemember] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isUsernameFocused, setIsUsernameFocused] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
 
   const busy = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -245,6 +285,8 @@ export default function AuthCard() {
     setPassword("");
     setConfirm("");
     setShowPassword(false);
+    setShowConfirmPassword(false);
+    setTermsAccepted(false);
 
     if (reduceMotion) {
       setMode(next);
@@ -271,15 +313,29 @@ export default function AuthCard() {
       return;
     }
 
+    if (mode === "register" && password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
     if (mode === "register" && password !== confirm) {
       setError("Passwords don't match.");
+      return;
+    }
+
+    if (mode === "register" && !termsAccepted) {
+      setError("Kindly read and accept the Terms and Conditions to proceed.");
+      return;
+    }
+
+    if (mode === "login" && loginAttempts >= 3) {
+      setError("Too many failed login attempts. Please try again later.");
       return;
     }
 
     try {
       setLoading(true);
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
-      // REPLACE WITH YOUR ACTUAL RENDER URL
       const response = await fetch(`https://adet-hap.onrender.com${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,18 +345,36 @@ export default function AuthCard() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (mode === "login") {
+          setLoginAttempts((prev) => prev + 1);
+          if (response.status === 401 || response.status === 400 || data.message?.toLowerCase().includes("password") || data.message?.toLowerCase().includes("credentials")) {
+            setError("Incorrect password. Please try again.");
+            return;
+          }
+        }
+
+        if (mode === "register" && (response.status === 400 || response.status === 409 || data.message?.toLowerCase().includes("taken") || data.message?.toLowerCase().includes("exist"))) {
+          setError("That username is taken. Please try again.");
+          return;
+        }
+
         throw new Error(data.message || "Authentication failed");
       }
 
-      if (mode === "login") {
-        localStorage.setItem("token", data.token);
-        window.location.href = "/dashboard";
-      } else {
-        switchMode("login");
-        setError("Registration successful! Please log in.");
+      if (data.token) {
+        setTokens(data.token);
       }
+
+      router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+      const errMsg = err instanceof Error ? err.message : "Something went wrong. Try again.";
+      if (mode === "login" && (errMsg.toLowerCase().includes("password") || errMsg.toLowerCase().includes("credentials") || errMsg.toLowerCase().includes("unauthorized"))) {
+        setError("Incorrect password. Please try again.");
+      } else if (mode === "register" && (errMsg.toLowerCase().includes("taken") || errMsg.toLowerCase().includes("exist") || errMsg.toLowerCase().includes("duplicate"))) {
+        setError("That username is taken. Please try again.");
+      } else {
+        setError(errMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -310,7 +384,7 @@ export default function AuthCard() {
 
   return (
     <main className="relative flex h-screen w-full items-center justify-center overflow-hidden px-4">
-     <Background animate={true} />
+      <Background animate={true} />
       <motion.div
         className="relative w-full max-w-md"
         initial={false}
@@ -347,119 +421,178 @@ export default function AuthCard() {
           transition={{ duration: gathered ? 0.25 : 0.4, delay: gathered ? 0 : 0.1 }}
           style={{ pointerEvents: gathered ? "none" : "auto" }}
         >
-          <header className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-white">
-              {isLogin ? "Welcome " : "Create "}
-              <span style={{ color: YELLOW }}>{isLogin ? "Back" : "Account"}</span>
-            </h1>
-            <p className="mt-2 text-sm text-zinc-300">
-              {isLogin
-                ? "Enter your credentials to access your account"
-                : "Register a new account to get started"}
-            </p>
-          </header>
-
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div className="relative">
-              <label htmlFor="username" className="sr-only">Username</label>
-              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                id="username"
-                type="text"
-                autoComplete="username"
-                placeholder="Username"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={`${inputClass} pl-10`}
-              />
-            </div>
-
-            <div className="relative">
-              <label htmlFor="password" className="sr-only">Password</label>
-              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                placeholder="Password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`${inputClass} pl-10 pr-12`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFE22E]/60"
+          <Card className={cardResetClass}>
+            <CardHeader className="mb-8 gap-2 space-y-0 p-0">
+              <CardTitle
+                role="heading"
+                aria-level={1}
+                className="text-3xl font-bold leading-9 tracking-tight text-white"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+                {isLogin ? "Welcome " : "Create "}
+                <span style={{ color: YELLOW }}>{isLogin ? "Back" : "Account"}</span>
+              </CardTitle>
+              <CardDescription className="text-sm text-zinc-300">
+                {isLogin
+                  ? "Enter your credentials to access your account"
+                  : "Register a new account to get started"}
+              </CardDescription>
+            </CardHeader>
 
-            {!isLogin && (
-              <div className="relative">
-                <label htmlFor="confirm" className="sr-only">Confirm password</label>
-                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  id="confirm"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="Confirm Password"
-                  required
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className={`${inputClass} pl-10 pr-12`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFE22E]/60"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            )}
-
-            {isLogin && (
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex cursor-pointer items-center gap-2 text-zinc-200">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="h-4 w-4 rounded border-white/20 bg-transparent accent-[#FFE22E]"
+            <CardContent className="p-0">
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                <div className="relative">
+                  <Label htmlFor="username" className="sr-only">Username</Label>
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <Input
+                    id="username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="Username"
+                    required
+                    value={username}
+                    onChange={(e) => {setUsername(e.target.value); 
+                      if (error) setError(null);}}
+                    onFocus={() => setIsUsernameFocused(true)}
+                    onBlur={() => setIsUsernameFocused(false)}
+                    className={`${inputClass} pl-10`}
                   />
-                  Remember me
-                </label>
-                <a href="#" className="text-zinc-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:underline">
-                  Forgot password?
-                </a>
-              </div>
-            )}
+                </div>
 
-            {error && (
-              <p role="alert" className="text-sm text-red-300">{error}</p>
-            )}
+                {!isLogin && isUsernameFocused && (
+                  <p className="text-[11px] text-zinc-400 px-1 -mt-2">
+                    Username must be unique.
+                  </p>
+                )}
 
-            <button type="submit" disabled={loading} className={buttonClass}>
-              {loading ? "Please wait…" : isLogin ? "Login" : "Register"}
-            </button>
-          </form>
+                <div className="relative">
+                  <Label htmlFor="password" className="sr-only">Password</Label>
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    placeholder="Password"
+                    required
+                    value={password}
+                    onChange={(e) => {setPassword(e.target.value);
+                      if (error) setError(null);}}
+                    onFocus={() => setIsPasswordFocused(true)}
+                    onBlur={() => setIsPasswordFocused(false)}
+                    className={`${inputClass} pl-10 pr-12`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className={eyeButtonClass}
+                  >
+                    {showPassword ? <EyeOff size={18} style={eyeIconStyle} /> : <Eye size={18} style={eyeIconStyle} />}
+                  </Button>
+                </div>
 
-          <p className="mt-6 text-center text-sm text-zinc-300">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              type="button"
-              onClick={() => switchMode(isLogin ? "register" : "login")}
-              className="font-medium transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:underline"
-              style={{ color: YELLOW }}
-            >
-              {isLogin ? "Register" : "Login"}
-            </button>
-          </p>
+                {!isLogin && isPasswordFocused && (
+                  <p className="text-[11px] text-zinc-400 px-1 -mt-2">
+                    Password must be at least 8 characters long.
+                  </p>
+                )}
+
+                {!isLogin && (
+                  <div className="relative">
+                    <Label htmlFor="confirm" className="sr-only">Confirm password</Label>
+                    <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <Input
+                      id="confirm"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Confirm Password"
+                      required
+                      value={confirm}
+                      onChange={(e) => {setConfirm(e.target.value);
+                        if (error) setError(null);}}
+                      className={`${inputClass} pl-10 pr-12`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      className={eyeButtonClass}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} style={eyeIconStyle} /> : <Eye size={18} style={eyeIconStyle} />}
+                    </Button>
+                  </div>
+                )}
+
+                {!isLogin && (
+                  <div className="flex items-center text-xs">
+                    <Label
+                      htmlFor="terms"
+                      className="flex cursor-pointer select-text items-center gap-2 text-xs font-normal leading-4 text-zinc-300"
+                    >
+                      <Checkbox
+                        id="terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => {setTermsAccepted(checked === true);
+                          if (error) setError(null);}}
+                        className={checkboxClass}
+                      />
+                      <span>
+                        I agree to the{" "}
+                        <a href="#" className="text-white underline transition-colors hover:text-[#EAB308]">
+                          Terms and Conditions
+                        </a>
+                      </span>
+                    </Label>
+                  </div>
+                )}
+
+                {/* Only render this wrapper when there is an active error, removing empty space */}
+                {error && (
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex-1 pr-2">
+                      <p role="alert" className="text-xs text-red-300 leading-tight">{error}</p>
+                    </div>
+                    {isLogin && (
+                      <div className="shrink-0">
+                        <a href="#" className="text-zinc-300 text-xs transition-colors hover:text-white focus-visible:outline-none focus-visible:underline">
+                          Forgot password?
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* If it's login mode and there is no error, show the forgot password link alone */}
+                {isLogin && !error && (
+                  <div className="flex items-center justify-end text-sm">
+                    <a href="#" className="text-zinc-300 text-xs transition-colors hover:text-white focus-visible:outline-none focus-visible:underline">
+                      Forgot password?
+                    </a>
+                  </div>
+                )}
+
+                <Button type="submit" disabled={loading} className={buttonClass}>
+                  {loading ? "Please wait…" : isLogin ? "Login" : "Register"}
+                </Button>
+              </form>
+            </CardContent>
+
+            <CardFooter className="mt-6 block rounded-none border-0 bg-transparent p-0 text-center text-sm text-zinc-300">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => switchMode(isLogin ? "register" : "login")}
+                className={linkButtonClass}
+                style={{ color: YELLOW }}
+              >
+                {isLogin ? "Register" : "Login"}
+              </Button>
+            </CardFooter>
+          </Card>
         </motion.div>
       </motion.div>
     </main>
