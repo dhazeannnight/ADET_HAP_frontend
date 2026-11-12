@@ -361,8 +361,11 @@ export default function AuthCard() {
         throw new Error(data.message || "Authentication failed");
       }
 
-      if (data.token) {
-        setTokens(data.token);
+      const accessToken = data.accessToken || data.access_token || data.token;
+      const refreshToken = data.refreshToken || data.refresh_token || "";
+
+      if (accessToken) {
+        setTokens(accessToken, refreshToken);
       }
 
       router.push("/dashboard");
